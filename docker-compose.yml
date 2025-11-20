@@ -1,0 +1,23 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: employees
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./migrations:/migrations
+  app:
+    build:
+      context: docker
+      dockerfile: docker/Dockerfile
+    environment:
+      DATABASE_URL: postgres://app:pass@db:5432/employees?sslmode=disable
+      PORT: "8080"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
