@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 	"errors"
-	"github.com/example/employee-service/internal/models"
-	"github.com/example/employee-service/internal/repo"
 	"github.com/go-playground/validator/v10"
 	"github.com/google/uuid"
+	"github.com/issarion23/employee-service/internal/models"
+	"github.com/issarion23/employee-service/internal/repo"
 	"time"
 )
 

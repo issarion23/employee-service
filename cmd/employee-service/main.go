@@ -2,15 +2,14 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/example/employee-service/internal/handler"
-	"github.com/example/employee-service/internal/repo"
-	"github.com/example/employee-service/internal/service"
+	"github.com/issarion23/employee-service/internal/handler"
+	"github.com/issarion23/employee-service/internal/repo"
+	"github.com/issarion23/employee-service/internal/service"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.uber.org/zap"
 )

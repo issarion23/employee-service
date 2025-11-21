@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/example/employee-service/internal/models"
-	"github.com/example/employee-service/internal/service"
+	"github.com/issarion23/employee-service/internal/service"
 	"go.uber.org/zap"
 )
 

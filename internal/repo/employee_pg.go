@@ -2,7 +2,7 @@ package repo
 
 import (
 	"context"
-	"github.com/example/employee-service/internal/models"
+	"github.com/issarion23/employee-service/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

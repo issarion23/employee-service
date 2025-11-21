@@ -3,19 +3,20 @@ package test
 import (
 	"bytes"
 	"context"
+	"github.com/issarion23/employee-service/internal/models"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/example/employee-service/internal/handler"
-	"github.com/example/employee-service/internal/service"
+	"github.com/issarion23/employee-service/internal/handler"
+	"github.com/issarion23/employee-service/internal/service"
 	"go.uber.org/zap"
 )
 
 type mockService struct{}
 
-func (m *mockService) CreateEmployee(_ context.Context, fullName, phone, city string) (*service.Employee, error) {
-	return &service.Employee{
+func (m *service.EmployeeService) CreateEmployee(_ context.Context, fullName, phone, city string) (*models.Employee, error) {
+	return &models.Employee{
 		ID:       "uuid",
 		FullName: fullName,
 		Phone:    phone,
