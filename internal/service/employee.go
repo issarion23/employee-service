@@ -1,56 +1,45 @@
 package service
 
 import (
-	"context"
-	"errors"
-	"github.com/go-playground/validator/v10"
-	"github.com/google/uuid"
 	"github.com/issarion23/employee-service/internal/models"
 	"github.com/issarion23/employee-service/internal/repo"
-	"time"
+
+	"errors"
 )
 
-var ErrValidation = errors.New("validation failed")
-
-type EmployeeService struct {
-	repo      *repo.EmployeeRepo
-	validator *validator.Validate
+type employeeService struct {
+	repo repo.EmployeeRepository
 }
 
-func NewEmployeeService(r *repo.EmployeeRepo) *EmployeeService {
-	return &EmployeeService{
-		repo:      r,
-		validator: validator.New(),
-	}
+func NewEmployeeService(repo repo.EmployeeRepository) EmployeeService {
+	return &employeeService{repo: repo}
 }
 
-type CreateEmployeeRequest struct {
-	FullName string `validate:"required,max=256"`
-	Phone    string `validate:"required,e164"`
-	City     string `validate:"required,max=128"`
-}
-
-func (s *EmployeeService) CreateEmployee(ctx context.Context, fullName, phone, city string) (*models.Employee, error) {
-	req := CreateEmployeeRequest{FullName: fullName, Phone: phone, City: city}
-	if err := s.validator.Struct(req); err != nil {
-		return nil, ErrValidation
+func (s *employeeService) CreateEmployee(req *models.CreateEmployeeRequest) (*models.Employee, error) {
+	if req.FullName == "" || req.Phone == "" || req.City == "" {
+		return nil, errors.New("all fields are required")
 	}
 
-	e := &models.Employee{
-		ID:        uuid.New().String(),
-		FullName:  fullName,
-		Phone:     phone,
-		City:      city,
-		CreatedAt: time.Now().UTC(),
+	employee := &models.Employee{
+		FullName: req.FullName,
+		Phone:    req.Phone,
+		City:     req.City,
 	}
 
-	if err := s.repo.Create(ctx, e); err != nil {
+	if err := s.repo.Create(employee); err != nil {
 		return nil, err
 	}
 
-	return e, nil
+	return employee, nil
 }
 
-func (s *EmployeeService) GetEmployee(ctx context.Context, id string) (*models.Employee, error) {
-	return s.repo.GetByID(ctx, id)
+func (s *employeeService) GetEmployeeByID(id int) (*models.Employee, error) {
+	if id <= 0 {
+		return nil, errors.New("invalid employee ID")
+	}
+	return s.repo.GetByID(id)
+}
+
+func (s *employeeService) GetAllEmployees() ([]models.Employee, error) {
+	return s.repo.GetAll()
 }

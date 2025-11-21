@@ -2,56 +2,73 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
+	"strconv"
 
+	"github.com/issarion23/employee-service/internal/models"
 	"github.com/issarion23/employee-service/internal/service"
-	"go.uber.org/zap"
+
+	"github.com/gorilla/mux"
 )
 
-type Handler struct {
-	service *service.EmployeeService
-	logger  *zap.Logger
+type EmployeeHandler struct {
+	service service.EmployeeService
 }
 
-func NewHandler(s *service.EmployeeService, l *zap.Logger) *Handler {
-	return &Handler{service: s, logger: l}
+func NewEmployeeHandler(service service.EmployeeService) *EmployeeHandler {
+	return &EmployeeHandler{service: service}
 }
 
-type CreateEmployeeRequest struct {
-	FullName string `json:"full_name"`
-	Phone    string `json:"phone"`
-	City     string `json:"city"`
-}
-
-func (h *Handler) CreateEmployee(w http.ResponseWriter, r *http.Request) {
-	var req CreateEmployeeRequest
+func (h *EmployeeHandler) CreateEmployee(w http.ResponseWriter, r *http.Request) {
+	var req models.CreateEmployeeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid json", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
-	emp, err := h.service.CreateEmployee(r.Context(), req.FullName, req.Phone, req.City)
-	if err == service.ErrValidation {
-		http.Error(w, "validation error", http.StatusBadRequest)
-		return
-	} else if err != nil {
-		h.logger.Error("create employee failed", zap.Error(err))
-		http.Error(w, "internal error", http.StatusInternalServerError)
+	employee, err := h.service.CreateEmployee(&req)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	w.Header().Set("Location", fmt.Sprintf("/v1/employees/%s", emp.ID))
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(emp)
+	respondWithJSON(w, http.StatusCreated, employee)
 }
 
-func (h *Handler) GetEmployee(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Path[len("/v1/employees/"):]
-	emp, err := h.service.GetEmployee(r.Context(), id)
+func (h *EmployeeHandler) GetEmployeeByID(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "not found", http.StatusNotFound)
+		respondWithError(w, http.StatusBadRequest, "Invalid employee ID")
 		return
 	}
-	json.NewEncoder(w).Encode(emp)
+
+	employee, err := h.service.GetEmployeeByID(id)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, "Employee not found")
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, employee)
+}
+
+func (h *EmployeeHandler) GetAllEmployees(w http.ResponseWriter, r *http.Request) {
+	employees, err := h.service.GetAllEmployees()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, employees)
+}
+
+func respondWithError(w http.ResponseWriter, code int, message string) {
+	respondWithJSON(w, code, map[string]string{"error": message})
+}
+
+func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+	response, _ := json.Marshal(payload)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	w.Write(response)
 }

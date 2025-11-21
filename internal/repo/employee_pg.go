@@ -1,31 +1,42 @@
 package repo
 
 import (
-	"context"
 	"github.com/issarion23/employee-service/internal/models"
-	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/jmoiron/sqlx"
 )
 
-type EmployeeRepo struct {
-	db *pgxpool.Pool
+type employeeRepository struct {
+	db *sqlx.DB
 }
 
-func NewEmployeeRepo(db *pgxpool.Pool) *EmployeeRepo {
-	return &EmployeeRepo{db: db}
+func NewEmployeeRepository(db *sqlx.DB) EmployeeRepository {
+	return &employeeRepository{db: db}
 }
 
-func (r *EmployeeRepo) Create(ctx context.Context, e *models.Employee) error {
-	q := `INSERT INTO employees (id, full_name, phone, city, created_at) VALUES ($1,$2,$3,$4,$5)`
-	_, err := r.db.Exec(ctx, q, e.ID, e.FullName, e.Phone, e.City, e.CreatedAt)
-	return err
+func (r *employeeRepository) Create(employee *models.Employee) error {
+	query := `
+		INSERT INTO employees (full_name, phone, city)
+		VALUES ($1, $2, $3)
+		RETURNING id, created_at, updated_at
+	`
+	return r.db.QueryRow(query, employee.FullName, employee.Phone, employee.City).
+		Scan(&employee.ID, &employee.CreatedAt, &employee.UpdatedAt)
 }
 
-func (r *EmployeeRepo) GetByID(ctx context.Context, id string) (*models.Employee, error) {
-	e := &models.Employee{}
-	q := `SELECT id, full_name, phone, city, created_at FROM employees WHERE id=$1`
-	err := r.db.QueryRow(ctx, q, id).Scan(&e.ID, &e.FullName, &e.Phone, &e.City, &e.CreatedAt)
+func (r *employeeRepository) GetByID(id int) (*models.Employee, error) {
+	var employee models.Employee
+	query := `SELECT id, full_name, phone, city, created_at, updated_at FROM employees WHERE id = $1`
+	err := r.db.Get(&employee, query, id)
 	if err != nil {
 		return nil, err
 	}
-	return e, nil
+	return &employee, nil
+}
+
+func (r *employeeRepository) GetAll() ([]models.Employee, error) {
+	var employees []models.Employee
+	query := `SELECT id, full_name, phone, city, created_at, updated_at FROM employees ORDER BY id DESC`
+	err := r.db.Select(&employees, query)
+	return employees, err
 }
